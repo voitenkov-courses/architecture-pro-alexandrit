@@ -51,7 +51,7 @@ kubectl port-forward svc/simplest-query 16686:16686
 ### Тестирование сервисов
 ```bash
 # Вызов service-a, который вызывает service-b
-kubectl exec -it $(kubectl get pods -l app=service-a -o jsonpath='{.items[0].metadata.name}') -- wget -qO- http://service-a:8080
+kubectl exec -it $(kubectl get pods -l app=service-a -o jsonpath='{.items[0].metadata.name}') -- wget -qO- http://service-a:8080/calculate
 ```
 
 ## Структура проекта
