@@ -1,0 +1,56 @@
+@startuml Order Processing
+Title Обработка заказов в системе Александрит
+autonumber
+' skinparam sequenceMessageAlign center
+actor "Оператор" as operator
+box "Система Александрит" #LightBlue
+boundary "MES WebApp" as app
+participant "MES API" as api
+database "Redis Cache" as cache
+database "MES DB" as db
+queue "Rabbit MQ" as mq
+end box
+
+== Прогрев кэша ==
+loop по всем популярным запросам
+api -> db++: запросы списка заказов в БД (самые частые)
+return {orders list}
+loop по всем заказам
+api -> cache++: Запрос данных для первой страницы заказов
+cache -> db++: Запрос данных для первой страницы заказов
+return {order}
+return {order}
+end
+end
+
+== Запрос списка заказов ==
+operator -> app++: Выбирает показать список заказов
+app -> api++: GET /orders/
+api -> db++: запросы списка заказов в БД
+return {orders list}
+loop по всем заказам
+api -> cache++: Чтение из кэша
+
+alt Кэш-попадание
+return {order}
+else Кэш-промах
+cache->db++: Запрос в БД
+return {order}
+cache -> api: {order}
+
+end
+return OK 200 
+end
+return Список заказов
+
+== Изменение статуса заказа ==
+
+operator -> app++: Изменяет статус заказа
+app -> api++: POST /orders/{order_id}
+api -> db++: обновление заказа в БД
+return Done
+api -> mq: Отправляет сообщение об изменении статуса заказа
+return OK 200
+return Статус изменен
+
+

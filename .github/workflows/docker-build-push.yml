@@ -1,0 +1,95 @@
+name: Docker Build and Push
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ alexandrit ]
+    paths:
+      - 'task3/services/**'
+      - '.github/workflows/docker-build-push.yml'
+  release:
+    types: [published]
+
+env:
+  REGISTRY: ghcr.io
+  SERVICE-A_IMAGE_NAME: ${{ github.repository }}/service-a
+  SERVICE-B_IMAGE_NAME: ${{ github.repository }}/service-b
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Service-a
+        id: meta-service-a
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.SERVICE-A_IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,format=short
+            type=ref,event=branch
+            latest
+
+      - name: Build and push Service-A Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./task3/services/service-a
+          push: true
+          tags: ${{ steps.meta-service-a.outputs.tags }}
+          labels: ${{ steps.meta-service-a.outputs.labels }}
+          platforms: linux/amd64,linux/arm64/v8
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Extract metadata (tags, labels) for Service-b
+        id: meta-service-b
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.SERVICE-B_IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,format=short
+            type=ref,event=branch
+            latest
+
+      - name: Build and push Service-B Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./task3/services/service-b
+          push: true
+          tags: ${{ steps.meta-service-b.outputs.tags }}
+          labels: ${{ steps.meta-service-b.outputs.labels }}
+          platforms: linux/amd64,linux/arm64/v8
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+   
