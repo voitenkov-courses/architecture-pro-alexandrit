@@ -5,7 +5,7 @@ on:
   push:
     branches: [ alexandrit ]
     paths:
-      - 'task3/services/**'
+      - 'Task3/services/**'
       - '.github/workflows/docker-build-push.yml'
   release:
     types: [published]
@@ -59,10 +59,10 @@ jobs:
             type=ref,event=branch
             latest
 
-      - name: Build and push Monolith Docker image
+      - name: Build and push Service-A Docker image
         uses: docker/build-push-action@v4
         with:
-          context: ./task3/services/service-a
+          context: ./Task3/services/service-a
           push: true
           tags: ${{ steps.meta-service-a.outputs.tags }}
           labels: ${{ steps.meta-service-a.outputs.labels }}
@@ -82,10 +82,10 @@ jobs:
             type=ref,event=branch
             latest
 
-      - name: Build and push Monolith Docker image
+      - name: Build and push Service-B Docker image
         uses: docker/build-push-action@v4
         with:
-          context: ./task3/services/service-b
+          context: ./Task3/services/service-b
           push: true
           tags: ${{ steps.meta-service-b.outputs.tags }}
           labels: ${{ steps.meta-service-b.outputs.labels }}
